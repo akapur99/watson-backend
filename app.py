@@ -196,9 +196,9 @@ def send_message(from_="+14193860121", to="+17814285958"):
     rndm2 = random.randint(0, 239)
     URLstr = tracks['URL'][rndm2] + ' \n'
 
-    msg = 'Hey there, you seem to be feeling a little down, just wanted to check in and drop a meditation link if that helps <3\n'
-    msg.append(URLstr)
-    msg.append(quotestr)
+    msg = 'Hey there, you seem to be feeling a little down, just wanted to check in and drop a meditation link if that helps <3 ' + URLstr + quotestr
+
+
     message = client.messages \
                 .create(
                      body=msg,
@@ -228,7 +228,7 @@ tracks = pd.read_csv('links.csv')
 @app.route("/")
 def hello_world():
     
-    print('Hi', flush=True)
+    print('Hola', flush=True)
     # mode = 'hour'
     # username = 'elonmusk'
     # count = 50
@@ -244,10 +244,11 @@ def hello_world():
     #                  'interval', minutes=2)
     # scheduler.start()
 
-    boo = True
+    # boo = True
+    send_message()
 
-    if boo:
-        send_message()
+    # if boo:
+    #     send_message()
         
     return 'done'
 
@@ -256,7 +257,7 @@ def hello_world():
 #     return "<p>Hello, World!</p>" 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
 
 
 
