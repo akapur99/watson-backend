@@ -2,6 +2,7 @@ from flask import Flask, request
 from dotenv import load_dotenv
 from pathlib import Path
 import os
+import random
 import requests
 import twilio
 from twilio.rest import Client
@@ -187,13 +188,24 @@ def program(api, username, silent=False, mode='hour',
 
 
 
-def send_message(body, from_="+14193860121", to="+17814285958"):
+def send_message(from_="+14193860121", to="+17814285958"):
+
+    
+    rndm = random.randint(0, 101)
+    quotestr = quotes[rndm]['quote'] + ' - ' + quotes[rndm]['author']
+    rndm2 = random.randint(0, 239)
+    URLstr = tracks['URL'][rndm2] + ' \n'
+
+    msg = 'Hey there, you seem to be feeling a little down, just wanted to check in and drop a meditation link if that helps <3\n'
+    msg.append(URLstr)
+    msg.append(quotestr)
     message = client.messages \
                 .create(
-                     body=body,
+                     body=msg,
                      from_ = from_,
                      to=to
                  )
+    print(msg, flush=True)
     
 
 # INIT
@@ -207,18 +219,23 @@ my_analyzer = NaturalLanguageUnderstandingV1(
 )
 my_analyzer.set_service_url(WATSON_URL)
 
+# QUOTES
+quotes = pd.read_json('quotes.json').quotes
+tracks = pd.read_csv('links.csv')
+
+
 
 @app.route("/")
 def hello_world():
     
     print('Hi', flush=True)
-    mode = 'hour'
-    username = 'elonmusk'
-    count = 50
-    too_many_tweets = 1000
-    max_attempts = 10
-    silent = False
-    d = program(api, username, silent, mode, count, too_many_tweets, max_attempts)
+    # mode = 'hour'
+    # username = 'elonmusk'
+    # count = 50
+    # too_many_tweets = 1000
+    # max_attempts = 10
+    # silent = False
+    # d = program(api, username, silent, mode, count, too_many_tweets, max_attempts)
 
     # scheduler = BlockingScheduler()
     # _ = scheduler.add_job(lambda: program(api, username, silent, mode,
@@ -230,7 +247,7 @@ def hello_world():
     boo = True
 
     if boo:
-        send_message('Test')
+        send_message()
         
     return 'done'
 
