@@ -154,7 +154,6 @@ def round_seconds(obj):
 
 def program(api, username, silent=False, mode='hour',
             count=50, too_many_tweets=1000, max_attempts=5):
-    
     data_path = './results/{}.csv'.format(username)
     if not os.path.isfile(data_path):
         data = pd.DataFrame(columns=['id', 'created_at', 'full_text', 'positivity',
@@ -165,7 +164,7 @@ def program(api, username, silent=False, mode='hour',
     data['created_at'] = pd.to_datetime(data['created_at'], format='%Y-%m-%d %H:%M:%S')
     if mode == 'hour':
         endDate = datetime.datetime.now()
-        timedelta = datetime.timedelta(hours=1)
+        timedelta = datetime.timedelta(weeks=3)
         startDate = endDate - timedelta
         tweets = get_tweets_for_user_within_dates(api, username, 
                                                   startDate, endDate,
@@ -174,7 +173,6 @@ def program(api, username, silent=False, mode='hour',
         results = {'sentiment': [], 'emotion': []}
         n = len(tweets)
         if n == 0:
-            print('no tweets found')
             return results
         if not silent:
             print('from: {}, to: {}, number of tweets: {}'.format(startDate,
@@ -204,7 +202,6 @@ def program(api, username, silent=False, mode='hour',
             sadness_lst.append(row['sadness']); joy_lst.append(row['joy']); fear_lst.append(row['fear'])
             disgust_lst.append(row['disgust']); anger_lst.append(row['anger'])
         if not found_new_tweet:
-            print('no new tweets found')
             return results
         data.to_csv(data_path, sep=',', index=False)
         positivity_avg = np.mean(positivity_lst)
@@ -223,7 +220,6 @@ def program(api, username, silent=False, mode='hour',
                 results['emotion'].append(emotion)
             elif interval_high == 1 and emotion_avg == 1:
                 results['emotion'].append(emotion)
-        print('tweets analyzed')
         return results
     elif mode == 'week':
         data_avg_path = './results/{}_avg.csv'.format(username)
@@ -248,7 +244,48 @@ def program(api, username, silent=False, mode='hour',
         data_avg = data_avg.append(row, ignore_index=True)
         data_avg = data_avg.round(2)
         data_avg.to_csv(data_avg_path, sep=',', index=False)
-
+    elif mode == 'test':
+        startDate = datetime.datetime(2021, 4, 30)
+        endDate = datetime.datetime(2021, 5, 1)
+        tweets = get_tweets_for_user_within_dates(api, 'JoeK902', startDate, endDate)
+        results = {'sentiment': [], 'emotion': []}
+        positivity_lst = []
+        sadness_lst, joy_lst, fear_lst, disgust_lst, anger_lst = [], [], [], [], []
+        for tweet_ in tweets:
+            if tweet_.id == 1388094359820808193:
+                tweet = tweet_
+                break
+        response = get_response(my_analyzer, tweet.full_text)
+        sentiment = response["sentiment"]["document"]
+        row = {"id": tweet.id, "created_at": utc_to_local(tweet.created_at),
+                "full_text": tweet.full_text.replace('\n', ' '),
+                "positivity": 0.5 if sentiment['label'] == 'neutral' else (sentiment['score'] + 1) / 2,
+                "sadness": 0, "joy": 0, "fear": 0, "disgust": 0, "anger": 0,
+                "categories": response["categories"], 
+                "concepts": response["concepts"],
+                "entities": response["entities"]}
+        for emotion, confidence in response['emotion']['document']['emotion'].items():
+            row[emotion] = confidence
+        positivity_lst.append(row['positivity'])
+        sadness_lst.append(row['sadness']); joy_lst.append(row['joy']); fear_lst.append(row['fear'])
+        disgust_lst.append(row['disgust']); anger_lst.append(row['anger'])
+        positivity_avg = np.mean(positivity_lst)
+        sadness_avg = np.mean(sadness_lst); joy_avg = np.mean(joy_lst); fear_avg = np.mean(fear_lst)
+        disgust_avg = np.mean(disgust_lst); anger_avg = np.mean(anger_lst)
+        for sentiment, (interval_low, interval_high) in sentiment_label_2_bin.items():
+            if interval_low <= positivity_avg < interval_high:
+                results['sentiment'].append(sentiment)
+                break
+            elif interval_high == 1 and positivity_avg == 1:
+                results['sentiment'].append(sentiment)
+                break
+        for emotion, (interval_low, interval_high) in emotion_label_2_bin.items():
+            emotion_avg = locals()[emotion+'_avg']
+            if interval_low <= emotion_avg < interval_high:
+                results['emotion'].append(emotion)
+            elif interval_high == 1 and emotion_avg == 1:
+                results['emotion'].append(emotion)
+        return results
 
 def send_message(emotion=None, from_="+14193860121", to="+17814285958"):
 
@@ -294,10 +331,10 @@ tracks = pd.read_csv('links.csv')
 sentiment_label_2_bin = {'negative': (0, 0.43), 'neutral': (0.43, 0.7), 'positive': (0.7, 1)}
 # Apply thresholds for emotion
 emotion_label_2_bin = {'joy': (0.58, 1), 
-                    'sadness': (0.55, 1), 
-                    'fear': (0.55, 1), 
-                    'disgust': (0.55, 1), 
-                    'anger': (0.55, 1)}
+                       'sadness': (0.55, 1), 
+                       'fear': (0.55, 1), 
+                       'disgust': (0.55, 1), 
+                       'anger': (0.55, 1)}
 
 
 
@@ -306,7 +343,7 @@ def hello_world():
     
     print('Hola', flush=True)
     mode = 'hour'
-    username = 'MiDJs4U'
+    username = 'CNN'
     count = 50
     too_many_tweets = 1000
     max_attempts = 10
@@ -320,7 +357,7 @@ def hello_world():
     send_message(d['emotion'])
     
     
-
+    # If Using Scheduler - Uncomment
     # scheduler = BlockingScheduler()
     # _ = scheduler.add_job(lambda: program(api, username, silent, mode,
     #                                    count, too_many_tweets, 
