@@ -139,6 +139,12 @@ def get_response(analyzer, text):
     ).get_result()
     return response
 
+# Helper method to round times to nearest second
+def round_seconds(obj):
+    if obj.microsecond >= 500_000:
+        obj += datetime.timedelta(seconds=1)
+    return obj.replace(microsecond=0)
+
 # Helper method to run program
 # params:
 
